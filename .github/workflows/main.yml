@@ -1,0 +1,36 @@
+name: Update Kernel KVM
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y clang lld python2 llvm git make gcc flex bison bc libssl-dev ccache libncurses5-dev libncursesw5-dev libtinfo5 cmake python3
+      - name: Build Project
+        run: | 
+          git config --global user.email "you@example.com"
+          git config --global user.name "zeroXone-github"
+          git submodule add https://github.com/rsuntk/KernelSU.git
+          git add .
+          git commit -m "Blump up KSU for NonGKI kernel"
+          chmod +x ./build.sh
+          ./build.sh all renoir
+      - name: Compress
+        run: tar -czvf build.tar.gz ../out
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: build.tar.gz
