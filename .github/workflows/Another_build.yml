@@ -22,7 +22,7 @@ jobs:
         run: | 
           git config --global user.email "you@example.com"
           git config --global user.name "zeroXone-github"
-          git submodule add https://github.com/rsuntk/KernelSU.git
+          git submodule add https://github.com/kirilll1aliuk/KernelSU.git
           
           export KERNEL_ROOT="$(pwd)"
           git clone https://gitlab.com/simonpunk/susfs4ksu -b 1.4.2-kernel-5.4
