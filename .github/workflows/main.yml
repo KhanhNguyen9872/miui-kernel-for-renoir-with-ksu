@@ -17,12 +17,23 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install -y clang lld python2 llvm git make gcc flex bison bc libssl-dev ccache libncurses5-dev libncursesw5-dev libtinfo5 cmake python3
+          sudo apt install -y clang lld cpio python2 llvm git make gcc flex bison bc libssl-dev ccache libncurses5-dev libncursesw5-dev libtinfo5 cmake python3
       - name: Build Project
         run: | 
           git config --global user.email "you@example.com"
           git config --global user.name "zeroXone-github"
           git submodule add https://github.com/rsuntk/KernelSU.git
+          
+          export KERNEL_ROOT="$(pwd)"
+          git clone https://gitlab.com/simonpunk/susfs4ksu
+          cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
+          cp ./susfs4ksu/kernel_patches/50_add_susfs_in_kernel-5.4.patch ././susfs4ksu/kernel_patches/50_add_susfs_in_kernel.patch
+          cp ./susfs4ksu/kernel_patches/fs/susfs.c ./fs/
+          cp ./susfs4ksu/kernel_patches/include/linux/susfs.h ./include/linux/
+          
+          cd $KERNEL_ROOT/KernelSU && patch -p1 < 10_enable_susfs_for_ksu.patch
+          cd $KERNEL_ROOT && patch -p1 < 50_add_susfs_in_kernel.patch
+          
           git add .
           git commit -m "Blump up KSU for NonGKI kernel"
           chmod +x ./build.sh
