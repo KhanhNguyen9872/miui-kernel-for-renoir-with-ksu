@@ -22,12 +22,12 @@ jobs:
         run: | 
           git config --global user.email "you@example.com"
           git config --global user.name "zeroXone-github"
-          git submodule add https://github.com/kirilll1aliuk/KernelSU.git
+          git submodule add https://github.com/KhanhNguyen9872/KernelSU.git
           
           export KERNEL_ROOT="$(pwd)"
           git clone https://gitlab.com/simonpunk/susfs4ksu -b 1.4.2-kernel-5.4
           
-          cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
+          # cp ./susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch ./KernelSU/
           cp ./susfs4ksu/kernel_patches/KernelSU/kernel/sucompat.h ./KernelSU/kernel/
           cp ./susfs4ksu/kernel_patches/50_add_susfs_in_kernel-5.4.patch ./50_add_susfs_in_kernel.patch
           cp ./susfs4ksu/kernel_patches/fs/susfs.c ./fs/
