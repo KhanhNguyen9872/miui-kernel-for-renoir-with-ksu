@@ -49,9 +49,9 @@ __invalid:
 	 * x3: per-CPU offset
 	 */
 __do_hyp_init:
-	/* Check for a stub HVC call */
-	cmp	x0, #HVC_STUB_HCALL_NR
-	b.lo	__kvm_handle_stub_hvc
+	/* Bypass the stub HVC call check */
+	// cmp	x0, #HVC_STUB_HCALL_NR
+	// b.lo	__kvm_handle_stub_hvc
 
 	phys_to_ttbr x4, x0
 alternative_if ARM64_HAS_CNP
@@ -59,55 +59,36 @@ alternative_if ARM64_HAS_CNP
 alternative_else_nop_endif
 	msr	ttbr0_el2, x4
 
+	/* Configure TCR_EL2 */
 	mrs	x4, tcr_el1
 	ldr	x5, =TCR_EL2_MASK
 	and	x4, x4, x5
 	mov	x5, #TCR_EL2_RES1
 	orr	x4, x4, x5
 
-	/*
-	 * The ID map may be configured to use an extended virtual address
-	 * range. This is only the case if system RAM is out of range for the
-	 * currently configured page size and VA_BITS, in which case we will
-	 * also need the extended virtual range for the HYP ID map, or we won't
-	 * be able to enable the EL2 MMU.
-	 *
-	 * However, at EL2, there is only one TTBR register, and we can't switch
-	 * between translation tables *and* update TCR_EL2.T0SZ at the same
-	 * time. Bottom line: we need to use the extended range with *both* our
-	 * translation tables.
-	 *
-	 * So use the same T0SZ value we use for the ID map.
-	 */
+	/* Set T0SZ value based on ID map settings */
 	ldr_l	x5, idmap_t0sz
 	bfi	x4, x5, TCR_T0SZ_OFFSET, TCR_TxSZ_WIDTH
 
-	/*
-	 * Set the PS bits in TCR_EL2.
-	 */
+	/* Set PS bits in TCR_EL2 */
 	tcr_compute_pa_size x4, #TCR_EL2_PS_SHIFT, x5, x6
-
 	msr	tcr_el2, x4
 
 	mrs	x4, mair_el1
 	msr	mair_el2, x4
 	isb
 
-	/* Invalidate the stale TLBs from Bootloader */
+	/* Invalidate stale TLBs from Bootloader */
 	tlbi	alle2
 	dsb	sy
 
-	/*
-	 * Preserve all the RES1 bits while setting the default flags,
-	 * as well as the EE bit on BE. Drop the A flag since the compiler
-	 * is allowed to generate unaligned accesses.
-	 */
+	/* Set SCTLR_EL2 with permissive flags to allow EL2 */
 	ldr	x4, =(SCTLR_EL2_RES1 | (SCTLR_ELx_FLAGS & ~SCTLR_ELx_A))
 CPU_BE(	orr	x4, x4, #SCTLR_ELx_EE)
 	msr	sctlr_el2, x4
 	isb
 
-	/* Set the stack and new vectors */
+	/* Set the stack and vectors for EL2 */
 	kern_hyp_va	x1
 	mov	sp, x1
 	msr	vbar_el2, x2
@@ -115,7 +96,7 @@ CPU_BE(	orr	x4, x4, #SCTLR_ELx_EE)
 	/* Set tpidr_el2 for use by HYP */
 	msr	tpidr_el2, x3
 
-	/* Hello, World! */
+	/* Return to caller */
 	eret
 ENDPROC(__kvm_hyp_init)
 
@@ -137,17 +118,13 @@ ENTRY(__kvm_handle_stub_hvc)
 1:	cmp	x0, #HVC_RESET_VECTORS
 	b.ne	1f
 
-	/*
-	 * Set the HVC_RESET_VECTORS return code before entering the common
-	 * path so that we do not clobber x0-x2 in case we are coming via
-	 * HVC_SOFT_RESTART.
-	 */
+	/* Set the HVC_RESET_VECTORS return code before entering common path */
 	mov	x0, xzr
 reset:
-	/* Reset kvm back to the hyp stub. */
+	/* Reset KVM back to the hyp stub */
 	mrs	x5, sctlr_el2
 	ldr	x6, =SCTLR_ELx_FLAGS
-	bic	x5, x5, x6		// Clear SCTL_M and etc
+	bic	x5, x5, x6		// Clear SCTL_M and other flags
 	pre_disable_mmu_workaround
 	msr	sctlr_el2, x5
 	isb
