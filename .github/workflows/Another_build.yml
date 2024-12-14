@@ -21,7 +21,7 @@ jobs:
       - name: Build Project
         run: | 
           git config --global user.email "you@example.com"
-          git config --global user.name "zeroXone-github"
+          git config --global user.name "KhanhNguyen9872"
           git submodule add https://github.com/KhanhNguyen9872/KernelSU.git
           
           export KERNEL_ROOT="$(pwd)"
@@ -34,7 +34,8 @@ jobs:
           
           cd $KERNEL_ROOT/KernelSU && patch -p1 < 10_enable_susfs_for_ksu.patch
           cd $KERNEL_ROOT && patch -p1 < 50_add_susfs_in_kernel.patch || echo 'skip error'
-          
+
+          cd $KERNEL_ROOT/KernelSU && git add . && git commit -m "Fix: Clean KernelSU submodule changes"
           git add .
           git commit -m "Blump up KSU for NonGKI kernel"
           chmod +x ./build.sh
