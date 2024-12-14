@@ -33,7 +33,7 @@ jobs:
           cp ./susfs4ksu/kernel_patches/include/linux/susfs.h ./include/linux/
           
           cd $KERNEL_ROOT/KernelSU && patch -p1 < 10_enable_susfs_for_ksu.patch
-          cd $KERNEL_ROOT && patch -p1 < 50_add_susfs_in_kernel.patch
+          cd $KERNEL_ROOT && patch -p1 < 50_add_susfs_in_kernel.patch || echo 'skip error'
           
           git add .
           git commit -m "Blump up KSU for NonGKI kernel"
